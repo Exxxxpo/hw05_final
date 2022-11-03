@@ -108,8 +108,8 @@ def add_comment(request, post_id):
 
 @login_required
 def follow_index(request):
-    """Получаем QuerySet авторов, на которых подписан юзер, затем вытаскиваем их
-    id из QuerySet в список, далее фильтруем Post по этим id"""
+    """Получаем QuerySet авторов, на которых подписан юзер, затем вытаскиваем
+    их id из QuerySet в список, далее фильтруем Post по этим id"""
     authors_query = Follow.objects.filter(user_id=request.user.id).values_list(
         'author_id'
     )
@@ -130,7 +130,7 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
-    # проверка, юзер не подписывается на себя и на автора, которого уже подписан
+    # проверка, юзер не подписывается на себя и автора, которого уже подписан
     if (
         request.user != author
         and not Follow.objects.filter(user=request.user)

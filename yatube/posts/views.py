@@ -3,7 +3,6 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import (
-    get_list_or_404,
     get_object_or_404,
     redirect,
     render,
@@ -49,8 +48,7 @@ def profile(request, username):
         'author': author,
     }
     if request.user.is_authenticated:
-        context[
-            'following']: Follow.objects.filter(user=request.user).filter(author=author).exists()
+        context['following'] = Follow.objects.filter(user=request.user).filter(author=author).exists()
     return render(request, 'posts/profile.html', context)
 
 
@@ -124,7 +122,7 @@ def follow_index(request):
         .select_related('group')
     )
     context = {
-        'page_obj': posts,
+        'page_obj': paginate(posts, request),
     }
     return render(request, 'posts/follow.html', context)
 
@@ -132,9 +130,10 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
-    record_to_create = [Follow(user_id=request.user.id, author=author)]
-    Follow.objects.bulk_create(record_to_create)
-    # return redirect('posts:follow_index')
+    if request.user != author and not Follow.objects.filter(user=request.user).filter(author=author).exists():
+        record_to_create = [Follow(user_id=request.user.id, author=author)]
+        Follow.objects.bulk_create(record_to_create)
+    return redirect('posts:follow_index')
 
 
 @login_required
@@ -142,4 +141,4 @@ def profile_unfollow(request, username):
     author = get_object_or_404(User, username=username)
     record_id = get_object_or_404(Follow, author=author).pk
     Follow.objects.filter(pk=record_id).delete()
-    # return redirect('posts:follow_index')
+    return redirect('posts:follow_index')

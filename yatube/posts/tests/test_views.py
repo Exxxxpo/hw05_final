@@ -8,7 +8,7 @@ from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
-from posts.models import Group, Post
+from posts.models import Follow, Group, Post
 
 User = get_user_model()
 
@@ -249,3 +249,56 @@ class CacheViewsTest(TestCase):
         response_last = self.guest_client.get(reverse('posts:index'))
         content_last = response_last.content
         self.assertNotEqual(content, content_last)
+
+
+class FollowViewsTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.author = User.objects.create_user(username='auth')
+        cls.follower = User.objects.create_user(username='follower')
+        cls.user = User.objects.create_user(username='jack')
+        cls.post = Post.objects.create(
+            author=cls.author,
+            text='5' * 20,
+        )
+
+    def setUp(self):
+        self.guest_client = Client()
+        self.follower_client = Client()
+        self.follower_client.force_login(self.follower)
+
+    def test_authorized_client_can_follow_and_unfollow(self):
+        """Авторизованный пользователь может подписываться и отписываться"""
+        self.follower_client.get(
+            reverse(
+                'posts:profile_follow',
+                kwargs={'username': self.author.username},
+            )
+        )
+        self.assertEqual(Follow.objects.first().user, self.follower)
+        self.assertEqual(Follow.objects.first().author, self.author)
+        # подписка оформилась, теперь выполним проверку на отписку
+        self.follower_client.get(
+            reverse(
+                'posts:profile_unfollow',
+                kwargs={'username': self.author.username},
+            )
+        )
+        self.assertFalse(Follow.objects.first())
+
+    def test_follow_page_show_correct_context(self):
+        """Новая запись пользователя появляется в ленте тех, кто на него
+        подписан и не появляется в ленте тех, кто не подписан."""
+        # подпишем follower на author
+        Follow.objects.create(
+            author_id=self.author.id, user_id=self.follower.id
+        )
+        # у подсписчика должна появиться запись
+        response = self.follower_client.get(reverse('posts:follow_index'))
+        post = response.context['page_obj'][0]
+        self.assertEqual(post.author, self.post.author)
+        self.assertEqual(post.text, self.post.text)
+        # у обычного юзера не должно быть записей
+        response = self.guest_client.get(reverse('posts:follow_index'))
+        self.assertIsNone(response.context)

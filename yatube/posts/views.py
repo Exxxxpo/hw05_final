@@ -2,11 +2,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.shortcuts import (
-    get_object_or_404,
-    redirect,
-    render,
-)
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import cache_page
 
 from .forms import CommentForm, PostForm
@@ -48,7 +44,11 @@ def profile(request, username):
         'author': author,
     }
     if request.user.is_authenticated:
-        context['following'] = Follow.objects.filter(user=request.user).filter(author=author).exists()
+        context['following'] = (
+            Follow.objects.filter(user=request.user)
+            .filter(author=author)
+            .exists()
+        )
     return render(request, 'posts/profile.html', context)
 
 
@@ -110,9 +110,9 @@ def add_comment(request, post_id):
 def follow_index(request):
     """Получаем QuerySet авторов, на которых подписан юзер, затем вытаскиваем их
     id из QuerySet в список, далее фильтруем Post по этим id"""
-    authors_query = Follow.objects.filter(
-        user_id=request.user.id
-    ).values_list('author_id')
+    authors_query = Follow.objects.filter(user_id=request.user.id).values_list(
+        'author_id'
+    )
     authors_id_list = []
     for id_tuple in authors_query:
         authors_id_list.append(id_tuple[0])
@@ -130,7 +130,12 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
-    if request.user != author and not Follow.objects.filter(user=request.user).filter(author=author).exists():
+    if (
+        request.user != author
+        and not Follow.objects.filter(user=request.user)
+        .filter(author=author)
+        .exists()
+    ):
         record_to_create = [Follow(user_id=request.user.id, author=author)]
         Follow.objects.bulk_create(record_to_create)
     return redirect('posts:follow_index')

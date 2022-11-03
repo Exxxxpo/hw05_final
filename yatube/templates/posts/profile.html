@@ -9,21 +9,21 @@
       <h3>Всего постов: {{ author.posts.count }} </h3>
       {% if user != author %}
         {% if following %}
-        <a
-          class="btn btn-lg btn-light"
-          href="{% url 'posts:profile_unfollow' author.username %}" role="button"
-        >
-          Отписаться
-        </a>
-      {% else %}
+          <a
+            class="btn btn-lg btn-light"
+            href="{% url 'posts:profile_unfollow' author.username %}" role="button"
+          >
+            Отписаться
+          </a>
+        {% else %}
           <a
             class="btn btn-lg btn-primary"
             href="{% url 'posts:profile_follow' author.username %}" role="button"
           >
             Подписаться
           </a>
-       {% endif %}
-     {% endif %}
+        {% endif %}
+      {% endif %}
       {% for post in page_obj %}
         <article>
           <ul>
@@ -48,7 +48,7 @@
         {% if not forloop.last %}<hr>{% endif %}
       {% endfor %}
       {% include 'posts/includes/paginator.html' %}
-      </div>
+    </div>
   </div>
 
 {% endblock %}

@@ -97,3 +97,5 @@ class PostURLTests(TestCase):
             with self.subTest(address=address):
                 response = self.author_client.get(address)
                 self.assertTemplateUsed(response, template)
+        # response = self.guest_client.get()
+        # self.assertTemplateUsed(response, 'core/403.html')

@@ -3,15 +3,15 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import (
-    get_object_or_404,
     get_list_or_404,
+    get_object_or_404,
     redirect,
     render,
 )
 from django.views.decorators.cache import cache_page
 
 from .forms import CommentForm, PostForm
-from .models import Group, Post, Follow
+from .models import Follow, Group, Post
 
 User = get_user_model()
 
@@ -48,6 +48,9 @@ def profile(request, username):
         'page_obj': paginate(posts, request),
         'author': author,
     }
+    if request.user.is_authenticated:
+        context[
+            'following']: Follow.objects.filter(user=request.user).filter(author=author).exists()
     return render(request, 'posts/profile.html', context)
 
 
@@ -107,38 +110,36 @@ def add_comment(request, post_id):
 
 @login_required
 def follow_index(request):
-    """Получаем значения авторов, на которых подписан юзер,
-    затем переносим их id в список, далее итерируемся по этим id и добавляем в
-    список нужные нам записи в формате QuerySet
-    """
-    # Получи список айдишников и по нему фильтруй
-    info = Follow.objects.get(user_id=request.user.id).author.all()[0]
-    info_1 = Post.objects.filter(author_id__in=[2, 4])
-    # value = []
-    # for _ in info:
-    #     value.append(_['author'])
-    #
-    # post = Post.objects.filter(author_id=(*value, ))
-    #     tag = tag | Post.objects.filter(author_id=author)
-    # for query_set in post:
+    """Получаем QuerySet авторов, на которых подписан юзер, затем вытаскиваем их
+    id из QuerySet в список, далее фильтруем Post по этим id"""
+    authors_query = Follow.objects.filter(
+        user_id=request.user.id
+    ).values_list('author_id')
+    authors_id_list = []
+    for id_tuple in authors_query:
+        authors_id_list.append(id_tuple[0])
+    posts = (
+        Post.objects.select_related('author')
+        .filter(author_id__in=authors_id_list)
+        .select_related('group')
+    )
     context = {
-        # 'page_obj': value,
-        # 'post': post,
-        'info': list(info_1),
+        'page_obj': posts,
     }
     return render(request, 'posts/follow.html', context)
 
 
-# @login_required
-# def profile_follow(request, username):
-#     user = get_object_or_404(User, username=username)
-#     add_follower = follow_author(
-#         id=request.user.id,
-#         user_id=user.id,
-#     )
-#     add_follower.save()
-#
-#
-# @login_required
-# def profile_unfollow(request, username):
-#     pass
+@login_required
+def profile_follow(request, username):
+    author = get_object_or_404(User, username=username)
+    record_to_create = [Follow(user_id=request.user.id, author=author)]
+    Follow.objects.bulk_create(record_to_create)
+    # return redirect('posts:follow_index')
+
+
+@login_required
+def profile_unfollow(request, username):
+    author = get_object_or_404(User, username=username)
+    record_id = get_object_or_404(Follow, author=author).pk
+    Follow.objects.filter(pk=record_id).delete()
+    # return redirect('posts:follow_index')

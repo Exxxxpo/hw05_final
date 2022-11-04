@@ -43,7 +43,9 @@ class Post(CreatedModel):
         verbose_name='Автор',
     )
 
-    image = models.ImageField('Изображение', upload_to='posts/', blank=True, null=True)
+    image = models.ImageField(
+        'Изображение', upload_to='posts/', blank=True, null=True
+    )
 
     def __str__(self):
         return f'{self.text[:15]}'

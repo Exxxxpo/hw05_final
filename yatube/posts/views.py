@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import cache_page
+
 from core.views import paginate
 
 from .forms import CommentForm, PostForm
@@ -32,7 +33,12 @@ def group_posts(request, slug):
 def profile(request, username):
     author = get_object_or_404(User, username=username)
     posts = author.posts.select_related('group')
-    if request.user.is_authenticated and Follow.objects.filter(user=request.user).filter(author=author).exists():
+    if (
+        request.user.is_authenticated
+        and Follow.objects.filter(user=request.user)
+        .filter(author=author)
+        .exists()
+    ):
         following = True
     else:
         following = False
@@ -94,19 +100,9 @@ def add_comment(request, post_id):
 
 @login_required
 def follow_index(request):
-    """Получаем QuerySet авторов, на которых подписан юзер, затем вытаскиваем
-    их id из QuerySet в список, далее фильтруем Post по этим id"""
-    authors_query = Follow.objects.filter(user_id=request.user.id).values_list(
-        'author_id'
-    )
-    authors_id_list = []
-    for id_tuple in authors_query:
-        authors_id_list.append(id_tuple[0])
-    posts = (
-        Post.objects.select_related('author')
-        .filter(author_id__in=authors_id_list)
-        .select_related('group')
-    )
+    posts = Post.objects.filter(
+        author__following__user=request.user
+    ).select_related('author', 'group')
     context = {
         'page_obj': paginate(posts, request),
     }
@@ -118,13 +114,15 @@ def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
     # проверка, юзер не подписывается на себя и автора, которого уже подписан
     if (
-            request.user != author
-            and not Follow.objects.filter(user=request.user)
-            .filter(author=author)
-            .exists()
+        request.user != author
+        and not Follow.objects.filter(user=request.user)
+        .filter(author=author)
+        .exists()
     ):
-        record_to_create = [Follow(user_id=request.user.id, author=author)]
-        Follow.objects.bulk_create(record_to_create)
+        Follow.objects.create(
+            user=request.user,
+            author=author,
+        )
     return redirect('posts:follow_index')
 
 

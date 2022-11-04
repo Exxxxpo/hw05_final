@@ -87,7 +87,7 @@ class PostsPagesTests(TestCase):
         self.assertEqual(post_object.text, self.post.text),
         self.assertEqual(post_object.author, self.post.author),
         self.assertEqual(post_object.group, self.group),
-        self.assertEqual(post_object.image, 'posts/' + str(self.uploaded)),
+        self.assertEqual(post_object.image, f'posts/{str(self.uploaded)}'),
 
     def test_index_page_show_correct_context(self):
         """Шаблон index сформирован с правильным контекстом."""

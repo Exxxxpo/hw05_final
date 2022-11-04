@@ -70,7 +70,7 @@ class PostCreateFormTests(TestCase):
         )
         self.assertEqual(Post.objects.first().group.id, form_data['group'])
         self.assertEqual(
-            Post.objects.first().image, 'posts/' + str(form_data['image'])
+            Post.objects.first().image, f"posts/{str(form_data['image'])}"
         )
 
     def test_authorized_user_can_create_post_without_group(self):
@@ -167,7 +167,7 @@ class PostEditFormTests(TestCase):
             response, Post.objects.first(), form_data, posts_count
         )
         self.assertEqual(
-            Post.objects.first().image, 'posts/' + str(form_data['image'])
+            Post.objects.first().image, f"posts/{str(form_data['image'])}"
         )
 
     def test_author_user_can_edit_post_without_group(self):

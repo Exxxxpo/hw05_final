@@ -43,7 +43,7 @@ class Post(CreatedModel):
         verbose_name='Автор',
     )
 
-    image = models.ImageField('Изображение', upload_to='posts/', blank=True)
+    image = models.ImageField('Изображение', upload_to='posts/', blank=True, null=True)
 
     def __str__(self):
         return f'{self.text[:15]}'
@@ -84,3 +84,6 @@ class Follow(models.Model):
         related_name='following',
         verbose_name='Автор',
     )
+
+    class Meta:
+        unique_together = ('user', 'author')

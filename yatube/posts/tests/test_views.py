@@ -302,3 +302,18 @@ class FollowViewsTest(TestCase):
         # у обычного юзера не должно быть записей
         response = self.guest_client.get(reverse('posts:follow_index'))
         self.assertIsNone(response.context)
+
+    def test_authorized_client_can_follow_only_one_time(self):
+        """Подписаться можно только 1 раз"""
+        # несколько раз пробуем подписаться
+        for _ in range(3):
+            self.follower_client.get(
+                reverse(
+                    'posts:profile_follow',
+                    kwargs={'username': self.author.username},
+                )
+            )
+        self.assertEqual(Follow.objects.all().count(), 1)
+        # проверяем корректность записи в БД
+        self.assertEqual(Follow.objects.first().user, self.follower)
+        self.assertEqual(Follow.objects.first().author, self.author)

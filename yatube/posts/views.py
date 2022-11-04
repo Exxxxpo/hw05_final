@@ -1,20 +1,13 @@
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
-from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import cache_page
+from core.views import paginate
 
 from .forms import CommentForm, PostForm
 from .models import Follow, Group, Post
 
 User = get_user_model()
-
-
-def paginate(post_list, request):
-    page_number = request.GET.get('page')
-    paginator = Paginator(post_list, settings.PAGINATE_LIMIT)
-    return paginator.get_page(page_number)
 
 
 @cache_page(20, key_prefix='index_page')
@@ -39,30 +32,23 @@ def group_posts(request, slug):
 def profile(request, username):
     author = get_object_or_404(User, username=username)
     posts = author.posts.select_related('group')
+    if request.user.is_authenticated and Follow.objects.filter(user=request.user).filter(author=author).exists():
+        following = True
+    else:
+        following = False
     context = {
         'page_obj': paginate(posts, request),
         'author': author,
+        'following': following,
     }
-    if request.user.is_authenticated:
-        context['following'] = (
-            Follow.objects.filter(user=request.user)
-            .filter(author=author)
-            .exists()
-        )
     return render(request, 'posts/profile.html', context)
 
 
 def post_detail(request, post_id):
     post = get_object_or_404(Post, id=post_id)
-    form = CommentForm(request.POST or None, files=request.FILES or None)
-    if form.is_valid():
-        post = form.save(commit=False)
-        post.author = request.user
-        post.save()
-        return redirect('posts:post_detail', post_id)
     context = {
         'post': post,
-        'form': form,
+        'form': CommentForm(),
     }
     return render(request, 'posts/post_detail.html', context)
 
@@ -132,10 +118,10 @@ def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
     # проверка, юзер не подписывается на себя и автора, которого уже подписан
     if (
-        request.user != author
-        and not Follow.objects.filter(user=request.user)
-        .filter(author=author)
-        .exists()
+            request.user != author
+            and not Follow.objects.filter(user=request.user)
+            .filter(author=author)
+            .exists()
     ):
         record_to_create = [Follow(user_id=request.user.id, author=author)]
         Follow.objects.bulk_create(record_to_create)

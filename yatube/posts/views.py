@@ -1,9 +1,8 @@
+from core.utils import paginate
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import cache_page
-
-from core.views import paginate
 
 from .forms import CommentForm, PostForm
 from .models import Follow, Group, Post
@@ -33,15 +32,12 @@ def group_posts(request, slug):
 def profile(request, username):
     author = get_object_or_404(User, username=username)
     posts = author.posts.select_related('group')
-    if (
+    following = (
         request.user.is_authenticated
         and Follow.objects.filter(user=request.user)
         .filter(author=author)
         .exists()
-    ):
-        following = True
-    else:
-        following = False
+    )
     context = {
         'page_obj': paginate(posts, request),
         'author': author,

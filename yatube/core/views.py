@@ -1,5 +1,3 @@
-from django.conf import settings
-from django.core.paginator import Paginator
 from django.shortcuts import render
 
 
@@ -18,9 +16,3 @@ def server_error(request):
 
 def permission_denied(request, exception):
     return render(request, 'core/403.html', status=403)
-
-
-def paginate(post_list, request):
-    page_number = request.GET.get('page')
-    paginator = Paginator(post_list, settings.PAGINATE_LIMIT)
-    return paginator.get_page(page_number)

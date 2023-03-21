@@ -14,6 +14,7 @@ SECRET_KEY = '1tds#^2y)(eppn#^p^5^*1pf(kd@jn_3600+^1cn)w(4qyfuu='
 DEBUG = False
 
 ALLOWED_HOSTS = [
+    '158.160.30.169',
     'exxxpo.hopto.org',
     'localhost',
     '127.0.0.1',
